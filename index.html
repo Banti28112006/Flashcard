@@ -1,0 +1,992 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name='viewport' content='width=device-width, initial-scale=1'/> 
+    <title>Subject-Based Flashcard App - Final Version</title> 
+    <link rel="stylesheet" href="style.css"> 
+</head>
+<body class="theme-blue"> 
+
+    <header> 
+        <button id="menu-button">=</button> 
+        <h1>Subject-Based Flashcard App</h1> 
+    </header>
+
+    <nav id="side-menu"> 
+        <button id="close-menu">&#8592;</button> 
+        <ul id="menu-options"> 
+            <li data-view="add">Add Flashcard</li> 
+            <li data-view="revision">Revision</li> 
+            <li data-view="all">All Flashcards</li> 
+            <li data-view="subjects">Subjects</li> 
+            <li data-view="theme">Theme</li> 
+            <li data-view="reset">Reset Flashcards</li> 
+            <li id="export-deck">Export Deck</li> 
+            <li id="import-deck">Import Deck</li> 
+        </ul>
+        <input type="file" id="import-file-input" accept="application/json"> 
+    </nav>
+
+    <main> 
+        <section id="add-flashcard-section" class="active"> 
+            <h2 id="form-title">Add New Flashcard</h2> 
+            <form id="add-flashcard-form"> 
+                <input type="text" id="new-subject" placeholder="Enter Subject" required> 
+                <input type="text" id="new-question" placeholder="Enter Question" required> 
+                <input type="text" id="new-answer" placeholder="Enter Answer" required> 
+                <button type="submit" id="submit-btn">Add Flashcard</button> 
+                <button type="button" id="cancel-edit-btn" style="display: none;">Cancel Edit</button> 
+            </form>
+        </section>
+
+        <section id="revision-section"> 
+            <h2>Revision Mode</h2> 
+            <label for="revision-subject-select">Select Subject:</label> 
+            <select id="revision-subject-select"></select> 
+            <div id="revision-flashcard-container"> 
+                <div class="flashcard" id="rev-flashcard"> 
+                    <div class="card-inner"> 
+                        <div class="card-front"> 
+                            <p id="rev-card-question">Your question will appear here</p> 
+                        </div>
+                        <div class="card-back"> 
+                            <p id="rev-card-answer">Your answer will appear here</p> 
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button id="rev-flip-btn">Show Answer</button> 
+            <div id="rev-rating-buttons" style="display: none;"> 
+                <button data-rating="again">Again</button> 
+                <button data-rating="good">Good</button> 
+                <button data-rating="easy">Easy</button> 
+            </div>
+            <button id="rev-next-btn" style="display: none;">Next Card</button> 
+            <div id="rev-no-cards-message" style="display: none;"> 
+                <p>No flashcards available for revision.</p> 
+            </div>
+        </section>
+
+        <section id="all-flashcards-section"> 
+            <h2>All Flashcards</h2> 
+            <button id="restart-all-btn">Restart All Flashcards</button> 
+            <div class="table-container"> 
+                <table id="all-flashcards-table"> 
+                    <thead> 
+                        <tr> 
+                            <th>Subject</th> 
+                            <th>Question</th> 
+                            <th>Reviews</th> 
+                            <th>Next Review</th> 
+                            <th>Actions</th> 
+                        </tr>
+                    </thead>
+                    <tbody> 
+                        </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="subjects-section"> 
+            <h2>Subjects</h2> 
+            <ul id="subjects-list"></ul> 
+        </section>
+
+        <section id="theme-section"> 
+            <h2>Choose Theme</h2> 
+            <div id="theme-options"> 
+                <button data-theme="default">Default Light</button> 
+                <button data-theme="dark">Dark (Grey/Black)</button> 
+                <button data-theme="blue">Blue</button> 
+            </div>
+        </section>
+
+    </main>
+
+    <script src="script.js" defer></script> 
+
+</body>
+</html>
+<style>/* CSS VARIABLES & THEME CLASSES */
+:root { 
+    /* Base Values */
+    --text-color: #333; 
+    --background-color: #f0f4f8; 
+    --card-background: #fff; 
+    --card-back-color: #e9f1fb; 
+    --card-text-color: #000; 
+}
+
+/* Default Light Theme */
+body.theme-default { 
+    --primary-color: #4A90E2; 
+    --secondary-color: #357ABD; 
+    --accent-color: #28a745; 
+    --danger-color: #dc3545; 
+    --text-color: #333; 
+    --background-color: #f0f4f8; 
+    --card-background: #fff; 
+    --card-back-color: #e9f1fb; 
+    --card-text-color: #000; 
+}
+
+/* Dark (Grey/Black) Theme */
+body.theme-dark { 
+    --primary-color: #121212; 
+    --secondary-color: #121212; 
+    --accent-color: #03dac6; 
+    --danger-color: #cf6679; 
+    --text-color: #E0E0E0; 
+    --background-color: #121212; 
+    --card-background: #1e1e1e; 
+    --card-back-color: #2c2c2c; 
+    --card-text-color: #E0E0E0; 
+}
+
+/* Blue Theme (Default) */
+body.theme-blue { 
+    --primary-color: #2196f3; 
+    --secondary-color: #1976d2; 
+    --accent-color: #0d47a1; 
+    --danger-color: #dc3545; 
+    --text-color: #333; 
+    --background-color: #e3f2fd; 
+    --card-background: #fff; 
+    --card-back-color: #bbdefb; 
+    --card-text-color: #000; 
+}
+
+/* Global Reset & Basic Styles */
+*, *::before, *::after { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+}
+
+body { 
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; 
+    background: var(--background-color); 
+    color: var(--text-color); 
+    transition: background 0.3s, color 0.3s; 
+}
+
+select { 
+    padding: 10px; 
+    border: 1px solid #ccc; 
+    border-radius: 4px; 
+    font-size: 1em; 
+    background-color: var(--card-background); 
+    color: var(--text-color); 
+}
+
+
+/* Header & Hamburger Menu */
+header { 
+    display: flex; 
+    align-items: center; 
+    padding: 20px; 
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); 
+    color: #fff; 
+    position: relative; 
+}
+
+#menu-button { 
+    background: transparent; 
+    border: none; 
+    color: #fff; 
+    font-size: 1.8em; 
+    margin-right: 15px; 
+    cursor: pointer; 
+}
+
+header h1 { 
+    flex-grow: 1; 
+    font-size: 1.8em; 
+}
+
+/* Side Menu - Fixed Styling */
+nav#side-menu { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    height: 100%; 
+    width: 55%; 
+    max-width: 300px; 
+    background: #f8f9fa; 
+    color: #333; 
+    z-index: 1000; 
+    padding: 20px; 
+    transform: translateX(-100%); 
+    transition: transform 0.3s ease-in-out; 
+}
+
+nav#side-menu.open { 
+    transform: translateX(0); 
+}
+
+#close-menu { 
+    background: transparent; 
+    border: none; 
+    font-size: 1.8em; 
+    cursor: pointer; 
+    margin-bottom: 15px; 
+}
+
+#menu-options { 
+    list-style: none; 
+}
+
+#menu-options li { 
+    margin: 15px 0; 
+    padding: 10px; 
+    cursor: pointer; 
+    border-bottom: 1px solid #ccc; 
+    transition: background 0.3s; 
+    color: #333; 
+}
+
+#menu-options li:hover { 
+    background: rgba(0, 0, 0, 0.1); 
+}
+
+#import-file-input { 
+    display: none; 
+}
+
+/* Main Container & Section Layout */
+main { 
+    max-width: 1000px; 
+    margin: 0 auto 40px; 
+    padding: 0 20px; 
+}
+
+section { 
+    background: var(--card-background); 
+    border: 1px solid #ddd; 
+    border-radius: 8px; 
+    margin-bottom: 30px; 
+    padding: 20px; 
+    display: none; 
+    animation: fadeln 0.8s forwards; 
+}
+
+section.active { 
+    display: block; 
+}
+
+h2 { 
+    margin-bottom: 15px; 
+    border-bottom: 1px solid #eee; 
+    padding-bottom: 8px; 
+}
+
+@keyframes fadeln { 
+    from { opacity: 0; transform: translateY(20px); } 
+    to { opacity: 1; transform: translateY(0); } 
+}
+
+/* Flashcard Styles */
+.flashcard { 
+    width: 320px; 
+    height: 220px; 
+    margin: 0 auto 15px; 
+    perspective: 1000px; 
+}
+
+.card-inner { 
+    width: 100%; 
+    height: 100%; 
+    transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); 
+    transform-style: preserve-3d; 
+    position: relative; 
+}
+
+.card-inner.flipped { 
+    transform: rotateY(180deg); 
+}
+
+.card-front, .card-back { 
+    width: 100%; 
+    height: 100%; 
+    border: 2px solid var(--primary-color); 
+    border-radius: 8px; 
+    backface-visibility: hidden; 
+    position: absolute; /* Added to ensure they overlay */
+    top: 0;
+    left: 0;
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    padding: 20px; 
+    font-size: 1.1em; 
+    white-space: normal; 
+    color: var(--card-text-color); 
+}
+
+.card-front { 
+    background: var(--card-background); 
+     /* Ensure front is initially visible */
+    z-index: 2; /* Added to ensure front is initially visible */
+
+}
+
+.card-back { 
+    background: var(--card-back-color); 
+    transform: rotateY(180deg); 
+    /* opacity: 0; Removed, backface-visibility handles hiding */ 
+    /* transition: transform 0.6s, opacity 0.6s; Removed opacity transition */ 
+    z-index: 1; /* Added to ensure back is behind initially */
+
+}
+
+
+/* Buttons & Form Styles */
+button { 
+    cursor: pointer; 
+    border: none; 
+    border-radius: 5px; 
+    padding: 10px 15px; 
+    margin: 5px; 
+    font-size: 1em; 
+    transition: background-color 0.3s, transform 0.2s; 
+}
+
+button:hover { 
+    transform: scale(1.03); 
+}
+
+form input { 
+    width: 100%; 
+    padding: 10px; 
+    margin: 8px 0; 
+    border: 1px solid #ccc; 
+    border-radius: 4px; 
+    font-size: 1em; 
+    background-color: var(--card-background); 
+    color: var(--text-color); 
+}
+
+form button { 
+    width: 100%; 
+    background-color: var(--primary-color); 
+    color: #fff; 
+}
+
+#cancel-edit-btn { 
+    background-color: var(--danger-color); 
+}
+
+/* Table Styles */
+.table-container { 
+    overflow-x: auto; 
+}
+
+table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    table-layout: auto; 
+}
+
+th, td { 
+    padding: 10px 14px; 
+    border: 1px solid #ddd; 
+    text-align: left; 
+    white-space: normal; 
+}
+
+th { 
+    background: #f8f9fa; 
+}
+
+tr:hover { 
+    background: #f8f9fa; 
+}
+
+.action-btn { 
+    font-size: 0.9em; 
+    padding: 5px 10px; 
+    margin-right: 5px; 
+    border: none; 
+    border-radius: 4px; 
+    background-color: #6c757d; 
+    color: #fff; 
+    transition: background-color 0.3s; 
+}
+
+.action-btn:hover { 
+    background-color: #5a6268; 
+}
+
+.delete-btn { 
+    background-color: var(--danger-color); 
+}
+
+.delete-btn:hover { 
+    background-color: #c82333; 
+}
+
+
+/* Theme Section */
+#theme-options { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 10px; 
+    justify-content: center; 
+}
+
+#theme-options button { 
+    flex: 1 1 30%; 
+    background-color: var(--primary-color); 
+    color: #fff; 
+    border: none; 
+    border-radius: 5px; 
+    padding: 10px; 
+    cursor: pointer; 
+    transition: transform 0.2s, background-color 0.3s; 
+}
+
+#theme-options button:hover { 
+    transform: scale(1.05); 
+}
+</style><script>// script.js
+/**********************************
+* Global Variables & Initialization
+**********************************/
+let flashcards = []; 
+let currentCardIndex = null; 
+let editingCardId = null; 
+let currentView = "add"; // Default view is "Add Flashcard" 
+
+/**********************************
+* LocalStorage Functions
+**********************************/
+function loadFlashcards() { 
+    try { 
+        const stored = localStorage.getItem("flashcards"); 
+        flashcards = stored ? JSON.parse(stored) : []; 
+    } catch (error) { 
+        console.error("Error loading flashcards:", error); 
+        flashcards = []; 
+    }
+}
+
+function saveFlashcards() { 
+    localStorage.setItem("flashcards", JSON.stringify(flashcards)); 
+}
+
+/**********************************
+* View Handling Functions
+**********************************/
+function showSection(view) { 
+    currentView = view; 
+    const sections = document.querySelectorAll("main section"); 
+    sections.forEach(sec => sec.classList.remove("active")); 
+    closeSideMenu(); 
+
+    const sectionMap = { 
+        add: "add-flashcard-section", 
+        revision: "revision-section", 
+        all: "all-flashcards-section", 
+        subjects: "subjects-section", 
+        theme: "theme-section" 
+    };
+
+    if (sectionMap[view]) { 
+        document.getElementById(sectionMap[view]).classList.add("active"); 
+        if (view === "revision") { 
+            updateRevisionDropdown(); 
+            showRevisionFlashcard(); 
+        } else if (view === "all") { 
+            updateAllFlashcardsTable(); 
+        } else if (view === "subjects") { 
+            updateSubjectsList(); 
+        }
+    } else if (view === "reset") { 
+        resetFlashcards(); 
+    }
+}
+
+
+/**********************************
+* Side Menu Functions
+**********************************/
+const menuButton = document.getElementById("menu-button"); 
+const sideMenu = document.getElementById("side-menu"); 
+const closeMenuBtn = document.getElementById("close-menu"); 
+
+function openSideMenu() { 
+    sideMenu.classList.add("open"); 
+}
+
+function closeSideMenu() { 
+    sideMenu.classList.remove("open"); 
+}
+
+menuButton.addEventListener("click", openSideMenu); 
+closeMenuBtn.addEventListener("click", closeSideMenu); 
+
+// Close menu if clicking outside
+document.addEventListener("click", (e) => { 
+    if (!e.composedPath().includes(sideMenu) && !e.composedPath().includes(menuButton)) { 
+        closeSideMenu(); 
+    }
+});
+
+const menuOptions = document.querySelectorAll("#menu-options li"); 
+menuOptions.forEach(option => { 
+    option.addEventListener("click", () => { 
+        const view = option.getAttribute("data-view"); 
+        if (view) { 
+            showSection(view); 
+        }
+    });
+});
+
+/**********************************
+* Add/Edit Flashcard Form Functions
+**********************************/
+document.getElementById("add-flashcard-form").addEventListener("submit", function(event) { 
+    event.preventDefault(); 
+    const subject = document.getElementById("new-subject").value.trim(); 
+    const question = document.getElementById("new-question").value.trim(); 
+    const answer = document.getElementById("new-answer").value.trim(); 
+
+    if (!subject || !question || !answer) { 
+        return alert("All fields are required!"); 
+    }
+
+    if (editingCardId) { 
+        // Update existing card
+        const index = flashcards.findIndex(card => card.id === editingCardId); 
+        if (index !== -1) { 
+            flashcards[index] = { ...flashcards[index], subject, question, answer, nextReview: Date.now() }; 
+        }
+        editingCardId = null; 
+        document.getElementById("form-title").textContent = "Add New Flashcard"; 
+        document.getElementById("submit-btn").textContent = "Add Flashcard"; 
+        document.getElementById("cancel-edit-btn").style.display = "none"; 
+    } else { 
+        // Add new card
+        const newCard = { 
+            id: Date.now(), 
+            subject, 
+            question, 
+            answer, 
+            nextReview: Date.now(), 
+            ratingHistory: [] 
+        };
+        flashcards.push(newCard); 
+    }
+
+    saveFlashcards(); 
+    // Clear form
+    document.getElementById("add-flashcard-form").reset(); 
+     // Optionally update views if relevant
+    if (currentView === 'all') updateAllFlashcardsTable(); 
+    if (currentView === 'subjects') updateSubjectsList(); 
+    // Optionally switch back to 'add' view or stay
+     // showSection("add"); // Uncomment if you want to always return to add view
+});
+
+document.getElementById("cancel-edit-btn").addEventListener("click", function() { 
+    editingCardId = null; 
+    document.getElementById("form-title").textContent = "Add New Flashcard"; 
+    document.getElementById("submit-btn").textContent = "Add Flashcard"; 
+    document.getElementById("cancel-edit-btn").style.display = "none"; 
+    document.getElementById("add-flashcard-form").reset(); // Reset the form fields 
+});
+
+/**********************************
+* Revision Mode Functions
+**********************************/
+function updateRevisionDropdown() { 
+    const select = document.getElementById("revision-subject-select"); 
+    select.innerHTML = ""; // Clear existing options 
+    const allOption = document.createElement("option"); 
+    allOption.value = "All"; 
+    allOption.textContent = "All Subjects"; 
+    select.appendChild(allOption); 
+
+    const subjects = [...new Set(flashcards.map(card => card.subject))]; 
+    subjects.sort().forEach(sub => { // Sort subjects alphabetically 
+        const opt = document.createElement("option"); 
+        opt.value = sub; 
+        opt.textContent = sub; 
+        select.appendChild(opt); 
+    });
+}
+
+function getRevisionFlashcards() { 
+    const select = document.getElementById("revision-subject-select"); 
+    const selectedSubject = select.value; 
+    const now = Date.now(); 
+    // Filter cards that are due for review
+    const dueCards = flashcards.filter(card => card.nextReview <= now); 
+    // Further filter by selected subject if not "All"
+    return selectedSubject === "All" ? dueCards : dueCards.filter(card => card.subject === selectedSubject); 
+}
+
+
+function showRevisionFlashcard() { 
+    const revisionCards = getRevisionFlashcards(); 
+    const container = document.getElementById("revision-flashcard-container"); 
+    const noCardsMsg = document.getElementById("rev-no-cards-message"); 
+    const flipBtn = document.getElementById("rev-flip-btn"); 
+    const ratingBtns = document.getElementById("rev-rating-buttons"); 
+    const nextBtn = document.getElementById("rev-next-btn"); 
+
+    if (revisionCards.length > 0) { 
+        container.style.display = "block"; 
+        noCardsMsg.style.display = "none"; 
+        flipBtn.style.display = "inline-block"; 
+        ratingBtns.style.display = "none"; 
+        nextBtn.style.display = "none"; 
+
+        // Select a random card from the due revision cards
+        const randomIndex = Math.floor(Math.random() * revisionCards.length); 
+        const cardToReview = revisionCards[randomIndex]; 
+        // Find the original index in the main flashcards array
+        currentCardIndex = flashcards.findIndex(card => card.id === cardToReview.id); 
+
+        loadRevisionCardToReview(cardToReview); 
+    } else { 
+        // No cards due for revision in the selected subject
+        container.style.display = "none"; 
+        noCardsMsg.style.display = "block"; 
+        noCardsMsg.textContent = "No flashcards currently due for revision in this subject."; /* Updated text */
+        flipBtn.style.display = "none"; 
+        ratingBtns.style.display = "none"; 
+        nextBtn.style.display = "none"; 
+        currentCardIndex = null; // Reset current index
+    }
+}
+
+
+function loadRevisionCardToReview(card) { 
+    document.getElementById("rev-card-question").textContent = card.question; 
+    document.getElementById("rev-card-answer").textContent = card.answer; 
+    const inner = document.querySelector("#rev-flashcard .card-inner"); 
+    inner.classList.remove("flipped"); // Ensure card starts unflipped 
+}
+
+document.getElementById("rev-flip-btn").addEventListener("click", function() { 
+    const inner = document.querySelector("#rev-flashcard .card-inner"); 
+    inner.classList.toggle("flipped"); 
+
+    // Show rating and next buttons only when flipped to answer
+    const isFlipped = inner.classList.contains("flipped"); 
+    document.getElementById("rev-rating-buttons").style.display = isFlipped ? "block" : "none"; 
+    document.getElementById("rev-next-btn").style.display = isFlipped ? "block" : "none"; 
+    // Hide flip button when showing answer
+    this.style.display = isFlipped ? "none" : "inline-block";
+});
+
+document.getElementById("rev-next-btn").addEventListener("click", function() { 
+    // Rating is implicitly done when clicking next without rating, or after rating.
+    // Load the next card for revision.
+    showRevisionFlashcard(); 
+});
+
+document.querySelectorAll("#rev-rating-buttons button").forEach(button => { 
+    button.addEventListener("click", function() { 
+        const rating = this.getAttribute("data-rating"); 
+        rateRevisionCard(rating); 
+    });
+});
+
+function rateRevisionCard(rating) { 
+    if (currentCardIndex !== null && currentCardIndex < flashcards.length) { 
+        const card = flashcards[currentCardIndex]; 
+        card.nextReview = calculateNextReview(rating); 
+        // Initialize rating history if it doesn't exist
+        if (!card.ratingHistory) { 
+            card.ratingHistory = []; 
+        }
+        card.ratingHistory.push({ rating, date: Date.now() }); 
+        saveFlashcards(); 
+        // Load the next card after rating
+        showRevisionFlashcard(); 
+    }
+}
+
+
+document.getElementById("revision-subject-select").addEventListener("change", showRevisionFlashcard); 
+
+/**********************************
+* All Flashcards Section Functions
+**********************************/
+function updateAllFlashcardsTable() { 
+    const tbody = document.querySelector("#all-flashcards-table tbody"); 
+    tbody.innerHTML = ""; // Clear existing rows 
+
+    // Sort flashcards, e.g., by subject then question
+    const sortedFlashcards = [...flashcards].sort((a, b) => {
+        if (a.subject.toLowerCase() < b.subject.toLowerCase()) return -1;
+        if (a.subject.toLowerCase() > b.subject.toLowerCase()) return 1;
+        if (a.question.toLowerCase() < b.question.toLowerCase()) return -1;
+        if (a.question.toLowerCase() > b.question.toLowerCase()) return 1;
+        return 0;
+    });
+
+
+    sortedFlashcards.forEach(card => { 
+        const row = document.createElement("tr"); 
+
+        row.insertCell().textContent = card.subject; 
+        row.insertCell().textContent = card.question; 
+        row.insertCell().textContent = card.ratingHistory ? card.ratingHistory.length : 0; 
+        // Format date/time nicely
+        const nextReviewDate = new Date(card.nextReview); 
+        row.insertCell().textContent = nextReviewDate.toLocaleString(); 
+
+        const actionCell = row.insertCell(); 
+        // Edit Button
+        const editBtn = document.createElement("button"); 
+        editBtn.textContent = "Edit"; 
+        editBtn.className = "action-btn"; 
+        editBtn.addEventListener("click", (e) => { 
+            e.stopPropagation(); // Prevent row click event
+            loadFlashcardForEdit(card.id); 
+            showSection("add"); // Switch to edit view 
+        });
+        actionCell.appendChild(editBtn); 
+
+        // Delete Button
+        const deleteBtn = document.createElement("button"); 
+        deleteBtn.textContent = "Delete"; 
+        deleteBtn.className = "action-btn delete-btn"; 
+        deleteBtn.addEventListener("click", (e) => { 
+            e.stopPropagation(); // Prevent row click event
+            deleteFlashcard(card.id); 
+             // Table will be updated by deleteFlashcard
+        });
+        actionCell.appendChild(deleteBtn); 
+
+        tbody.appendChild(row); 
+    });
+}
+
+
+/**********************************
+* Subjects Section Functions
+**********************************/
+function updateSubjectsList() { 
+    const ul = document.getElementById("subjects-list"); 
+    ul.innerHTML = ""; 
+    const subjects = [...new Set(flashcards.map(card => card.subject))]; 
+    subjects.sort(); // Sort subjects alphabetically 
+
+    if (subjects.length === 0) { 
+        const li = document.createElement("li"); 
+        li.textContent = "No subjects available."; 
+        ul.appendChild(li); 
+    } else { 
+        subjects.forEach(sub => { 
+            const li = document.createElement("li"); 
+            li.textContent = sub; 
+            li.style.cursor = "pointer"; 
+            li.style.padding = "10px"; 
+            li.style.borderBottom = "1px solid #ccc"; 
+            li.addEventListener("click", () => { 
+                // When clicking a subject, go to Revision view and select it
+                const select = document.getElementById("revision-subject-select"); 
+                select.value = sub; 
+                showSection("revision"); 
+            });
+            ul.appendChild(li); 
+        });
+    }
+}
+
+
+/**********************************
+* Editing & Deleting Functions
+**********************************/
+function loadFlashcardForEdit(cardId) { 
+    const card = flashcards.find(card => card.id === cardId); 
+    if (card) { 
+        editingCardId = cardId; 
+        document.getElementById("new-subject").value = card.subject; 
+        document.getElementById("new-question").value = card.question; 
+        document.getElementById("new-answer").value = card.answer; 
+        document.getElementById("form-title").textContent = "Edit Flashcard"; 
+        document.getElementById("submit-btn").textContent = "Update Flashcard"; 
+        document.getElementById("cancel-edit-btn").style.display = "block"; // Show cancel button 
+    }
+}
+
+function deleteFlashcard(cardId) { 
+    if (confirm("Are you sure you want to delete this flashcard?")) { 
+        flashcards = flashcards.filter(card => card.id !== cardId); 
+        saveFlashcards(); 
+        // Refresh relevant views
+        updateAllFlashcardsTable(); 
+        updateSubjectsList(); 
+        // If deleting the card currently shown in revision, show the next one
+        if (currentView === 'revision') { 
+             showRevisionFlashcard(); // Recalculate and show next revision card 
+        }
+    }
+}
+
+/**********************************
+* Reset Flashcards Function
+**********************************/
+function resetFlashcards() { 
+    if (confirm("This will permanently delete ALL flashcards. Are you sure?")) { 
+        flashcards = []; 
+        saveFlashcards(); 
+        alert("All flashcards have been reset."); 
+        // Refresh all relevant views
+        updateAllFlashcardsTable(); 
+        updateSubjectsList(); 
+        updateRevisionDropdown(); // Reset dropdown 
+        showSection("add"); // Go back to the add screen 
+    }
+}
+
+
+/**********************************
+* Calculate Next Review Time (Simple Spaced Repetition)
+**********************************/
+function calculateNextReview(rating) { 
+    const now = Date.now(); 
+    let interval; 
+    // Basic intervals (in milliseconds)
+    switch (rating) { 
+        case "again": // Review soon
+            interval = 10 * 60 * 1000; // 10 minutes 
+            break;
+        case "good": // Review tomorrow
+            interval = 24 * 60 * 60 * 1000; // 1 day 
+            break;
+        case "easy": // Review in a few days
+            interval = 4 * 24 * 60 * 60 * 1000; // 4 days 
+            break;
+        default: // Default to 'good' if rating is unexpected
+            interval = 24 * 60 * 60 * 1000; // 1 day 
+    }
+    return now + interval; 
+}
+
+
+/**********************************
+* Import/Export Functions
+**********************************/
+function exportDeck() { 
+    if (flashcards.length === 0) {
+        alert("There are no flashcards to export.");
+        return;
+    }
+    const dataStr = JSON.stringify(flashcards, null, 2); // Pretty print JSON 
+    const blob = new Blob([dataStr], { type: "application/json" }); 
+    const url = URL.createObjectURL(blob); 
+    const a = document.createElement("a"); 
+    a.href = url; 
+    // Suggest a filename including the date
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.download = `flashcards_backup_${dateStr}.json`; 
+    document.body.appendChild(a); 
+    a.click(); 
+    document.body.removeChild(a); // Clean up 
+    URL.revokeObjectURL(url); // Release memory 
+}
+
+function triggerImport() { 
+    // Reset file input to allow importing the same file again
+    const fileInput = document.getElementById("import-file-input"); 
+    fileInput.value = ''; // Clear the selected file
+    fileInput.click(); // Open file dialog 
+}
+
+
+document.getElementById("import-file-input").addEventListener("change", function(e) { 
+    const file = e.target.files[0]; 
+    if (file) { 
+        const reader = new FileReader(); 
+        reader.onload = function(e) { 
+            try { 
+                const importedData = JSON.parse(e.target.result); 
+                // Basic validation: check if it's an array
+                if (Array.isArray(importedData)) { 
+                     // Optional: Add more robust validation (check object structure)
+                    if (confirm("Merge imported flashcards with current deck? (Cancel to replace)")) { 
+                        // Merge: Combine and remove potential duplicates by ID
+                        const currentIds = new Set(flashcards.map(c => c.id)); 
+                        const newCards = importedData.filter(c => !currentIds.has(c.id)); 
+                        flashcards = flashcards.concat(newCards); 
+                    } else { 
+                        // Replace
+                        flashcards = importedData; 
+                    }
+                    saveFlashcards(); 
+                    alert("Flashcards imported successfully!"); 
+                    // Refresh views
+                    updateAllFlashcardsTable(); 
+                    updateSubjectsList(); 
+                    updateRevisionDropdown(); 
+                    showSection(currentView); // Refresh the current view 
+                } else { 
+                    alert("Invalid file format. Expected a JSON array of flashcards."); 
+                }
+            } catch (err) { 
+                console.error("Error parsing imported file:", err); 
+                alert("Error parsing file. Please ensure it is valid JSON."); 
+            }
+        };
+        reader.onerror = function() {
+             console.error("Error reading file:", reader.error);
+             alert("Error reading file.");
+        };
+        reader.readAsText(file); 
+    }
+});
+
+
+document.getElementById("export-deck").addEventListener("click", function() { 
+    exportDeck(); 
+    closeSideMenu(); 
+});
+
+document.getElementById("import-deck").addEventListener("click", function() { 
+    triggerImport(); 
+    closeSideMenu(); 
+});
+
+/**********************************
+* Theme Functions
+**********************************/
+const themeButtons = document.querySelectorAll("#theme-options button"); 
+themeButtons.forEach(button => { 
+    button.addEventListener("click", function() { 
+        const theme = this.getAttribute("data-theme"); 
+        document.body.className = `theme-${theme}`; // Set class directly 
+        // Optional: Save theme preference to localStorage
+        // localStorage.setItem('flashcardTheme', `theme-${theme}`);
+    });
+});
+
+// Optional: Load saved theme on startup
+// function loadTheme() {
+//     const savedTheme = localStorage.getItem('flashcardTheme');
+//     if (savedTheme) {
+//         document.body.className = savedTheme;
+//     } else {
+//         document.body.className = 'theme-blue'; // Default theme
+//     }
+// }
+
+
+/**********************************
+* Initialize App on Load
+**********************************/
+function initializeApp() {
+    // loadTheme(); // Load theme first if implemented
+    loadFlashcards(); 
+    updateRevisionDropdown(); // Populate dropdown initially 
+    updateSubjectsList(); // Populate subjects list initially 
+    showSection("add"); // Start on the 'Add Flashcard' view 
+}
+
+// Wait for the DOM to be fully loaded before running the script
+document.addEventListener('DOMContentLoaded', initializeApp);</script>
